@@ -16,6 +16,7 @@
 - **模板库**：预置五套模板（一年级生字、古诗、姓名练字、ABC、拼音）
 - **离线笔顺数据**：`public/data/strokes.json` 内置 1096 个常用字（hanzi-writer-v1 格式，2.59MB），加载后完全离线可用
 - **本地保存**：编辑内容与配置存于 localStorage，刷新不丢失
+- **备份与恢复**：首页可把选中/全部字帖导出为单个 JSON 备份文件（含版本号、导出时间、份数）；导入时逐文件/逐条校验，坏文件与坏条目列出原因并跳过，同 id 冲突可选「覆盖 / 另存为新的一份 / 跳过」，完成后报告新增、覆盖、跳过份数
 
 ## 技术栈
 
@@ -43,7 +44,7 @@ app-022/
 │   │   ├── exportImage.tsx       # renderToStaticMarkup 拼 SVG → 导出 SVG/PNG
 │   │   ├── pinyin.ts             # 拼音标注（含多音字）
 │   │   ├── charinfo.ts           # 精选字信息（部首/结构）
-│   │   ├── data.ts / input.ts / storage.ts / types.ts
+│   │   ├── data.ts / input.ts / storage.ts / backup.ts / types.ts
 │   ├── components/
 │   │   ├── StrokePlayer.tsx      # 笔顺逐笔动画播放器
 │   │   ├── paint.tsx             # 渲染组件层
@@ -51,8 +52,8 @@ app-022/
 │   ├── pages/                    # Home / Editor / PrintView / Library / Play
 │   ├── hooks.ts                  # useWorksheetDoc / isFormTarget
 │   ├── App.tsx / main.tsx / styles.css / types.ts
-├── tests/unit/                   # 31 个单元测试（layout/pinyin/strokes-data/data-import）
-├── e2e/                          # 24 个 Playwright E2E 用例（main-flow / print-and-perf）
+├── tests/unit/                   # 40 个单元测试（layout/pinyin/strokes-data/data-import/backup）
+├── e2e/                          # 29 个 Playwright E2E 用例（main-flow / print-and-perf / backup）
 ├── playwright.config.ts          # E2E 端口 4322（preview 服务器）
 ├── Dockerfile                    # node:20-alpine 构建 → nginx:1.27-alpine-slim 运行
 ├── nginx.conf                    # gzip / /healthz / 静态缓存策略 / SPA 回退
@@ -83,10 +84,10 @@ npm run gen:data     # 生成 public/data/strokes.json
 ## 测试
 
 ```bash
-# 单元测试（31 项：分页不拆字 / buildBlock 规则 / 笔顺数据完整性 / 拼音多音字 / 去重排序等）
+# 单元测试（40 项：备份导出/恢复解析/冲突处理、分页不拆字 / buildBlock 规则 / 笔顺数据完整性 / 拼音多音字 / 去重排序等）
 npm test
 
-# E2E 测试（24 项：主流程 / 去重 / 导出 / 100 字分页 10 页 / 1:1 校验尺 / PDF 页数 / 性能 / healthz）
+# E2E 测试（29 项：备份恢复 / 主流程 / 去重 / 导出 / 100 字分页 10 页 / 1:1 校验尺 / PDF 页数 / 性能 / healthz）
 npx playwright install chromium   # 首次需要
 npm run e2e                       # 端口 4322，自动拉起 preview 服务器
 ```

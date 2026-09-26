@@ -28,5 +28,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/unit/**/*.test.ts'],
+    // 首次动态 import 触发按需 transform，在慢机器上可能超过默认 5s
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
 });
