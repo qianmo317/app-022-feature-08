@@ -118,7 +118,9 @@ export default function Editor(): JSX.Element {
     return () => window.removeEventListener('resize', calc);
   }, []);
 
-  // 自动保存（防抖），并记录页数
+  // 自动保存（250ms 防抖，合批同帧多次更新，避免每次按键都序列化全量字帖），并记录页数
+  const latestWs = useRef(ws);
+  latestWs.current = ws;
   useEffect(() => {
     if (!ws) return;
     const t = setTimeout(() => {
@@ -126,6 +128,21 @@ export default function Editor(): JSX.Element {
     }, 250);
     return () => clearTimeout(t);
   }, [ws]);
+
+  // 兜底：快速离开编辑器时挂起的防抖保存会被清除，这里在页面隐藏/组件卸载时同步落盘
+  useEffect(() => {
+    const flush = () => {
+      const cur = latestWs.current;
+      if (cur) {
+        saveWorksheet({ ...cur, pages: paginate(cur.chars, cur.layout, strokeCountOf).length, updatedAt: Date.now() });
+      }
+    };
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+  }, []);
 
   // 选中字失效时回退到第一个字
   useEffect(() => {

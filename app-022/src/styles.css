@@ -55,6 +55,38 @@ textarea { width: 100%; resize: vertical; }
 .recent-item .hint { display: block; margin: 4px 0; }
 .recent-chars { font-size: 16px; letter-spacing: 2px; color: #374151; }
 .recent-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.recent-head h2 { margin: 0; }
+.backup-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.backup-actions .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.check-all { font-size: 13px; color: #374151; white-space: nowrap; }
+.recent-check { display: flex; align-items: center; flex-shrink: 0; }
+.recent-check input { width: 16px; height: 16px; cursor: pointer; }
+
+/* ---------- 备份恢复对话框 ---------- */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px;
+}
+.modal {
+  width: min(680px, 100%); max-height: 86vh; overflow: auto;
+  display: flex; flex-direction: column; gap: 12px; margin: 0;
+}
+.modal h2 { margin: 0; font-size: 17px; }
+.modal-errors { display: flex; flex-direction: column; gap: 8px; }
+.import-error {
+  border: 1px solid #e0b4ae; background: #fdf3f2; border-radius: 8px;
+  padding: 8px 12px; font-size: 13px; color: #7a2e24;
+}
+.import-error ul { margin: 4px 0 0; padding-left: 20px; }
+.import-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.import-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid #e3e7ec; border-radius: 8px; padding: 8px 12px; flex-wrap: wrap;
+}
+.import-item[data-conflict="true"] { border-color: #e6d2a8; background: #fdf9ef; }
+.import-choices { display: flex; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 
 /* ---------- 模板库 ---------- */
 .library { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }

@@ -17,3 +17,7 @@ exports/
 .DS_Store
 
 # 注意：public/data/ 为离线笔顺数据，必须保留，不能忽略
+
+# Playwright 测试产物
+test-results/
+playwright-report/

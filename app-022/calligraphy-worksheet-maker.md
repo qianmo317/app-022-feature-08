@@ -26,10 +26,11 @@
 5. **多音字**：字面板列出该字全部读音（如「行」共 4 个选项），选中的读音写入 `pinyinChoice` 并在预览信息带显示。
 6. **笔顺动画**：`StrokePlayer` 用 `requestAnimationFrame` + `strokeDashoffset` 逐笔描边，已完成笔灰色、当前笔深色，支持播放/暂停/上一笔/下一笔/重置/圆点跳转。
 7. **打印与导出**：`Ctrl/Cmd+P` 进入打印视图（A4、页边距 0）；单页导出 SVG 与 4x PNG。
-8. **本地保存**：字帖存 localStorage（防抖 250ms 自动保存并记录页数），刷新不丢。
+8. **本地保存**：字帖存 localStorage（250ms 防抖自动保存并记录页数；`pagehide` 与组件卸载时再同步兜底落盘，快速离开编辑器也不丢改动），刷新不丢。
 9. **模板库与校验尺**：5 套预置模板；第 1 页附 100mm 校验尺用于核对物理尺寸。
 
 ## 5. 进阶功能
+- **字帖备份与恢复**：首页勾选一份或多份「导出选中」、或一键「导出全部」为单个 JSON 备份文件，文件头写明 `app` 标识、`version` 版本号、`exportedAt` 导出时间、`count` 包含份数与 `worksheets` 列表；「导入恢复」可一次选多个备份文件。恢复前弹审查对话框：逐条校验文件与字帖，版本号对不上、顶层缺字段、count 不符等列为**文件级错误**（整文件跳过），单份字帖缺字段/字段类型错列为**条目级错误**（点名文件名、第几份、标题/id、缺哪个字段），坏文件坏条目不影响好文件，只恢复没坏的；与本机同 id 的字帖让老师逐份选「覆盖 / 另存为新的一份 / 跳过」（默认另存，副本换新 id 与不重名的「（副本）」「（副本 2）」标题）；完成后报告新增、覆盖、跳过各几份。纯逻辑在 `src/lib/backup.ts`，不碰 DOM/localStorage 之外的副作用。
 - **自定义笔顺数据导入**：支持 `{chars:{...}}` 全量包、`{字:{strokes,...}}` 单字映射、`{strokes:[...]}` 绑定当前字三种格式，写入 localStorage 并即时生效。
 - **按笔画数排序**：用于把生字表排成由易到难。
 - **单字编辑**：面板内替换（同字去重）与删除该字，文本域与预览同步。
@@ -38,7 +39,7 @@
 
 ## 6. 页面结构
 ```
-/                    首页：输入生字生成字帖 + 最近字帖列表（打开/笔顺/删除）
+/                    首页：输入生字生成字帖 + 最近字帖列表（勾选/打开/笔顺/删除、导出选中/全部、导入恢复）
 /worksheet/:id       编辑器（左 300px 设置 | 中预览 | 右 280px 单字面板）
 /worksheet/:id/print 打印视图（?autoprint=1 时字体就绪后自动唤起打印）
 /library             模板库（5 套模板一键套用）
@@ -67,6 +68,7 @@ type Row = Block[]; type Page = Row[];
 ```
 - 笔顺数据：`public/data/strokes.json`，`{ format: 'hanzi-writer-v1', count, chars: { 字: { strokes: string[], medians: number[][][] } } }`，实测 `count = 1096`、2,590,937 字节。
 - localStorage 键：`app022:worksheets`（字帖数组，新存的排最前）、`app022:customStrokes`（导入的补充笔顺）。
+- 备份文件：`{ app: 'tianzige-backup', version: 1, exportedAt: ISO 字符串, count: n, worksheets: Worksheet[] }`，由 `src/lib/backup.ts` 的 `buildBackup` 生成、`reviewBackupFiles` 解析校验、`restoreBackup` 写入。
 - 部首/结构取自 `src/lib/charinfo.ts` 的 `CHAR_META`（字 → [部首, 结构]，结构取值 `left_right | top_bottom | single | enclosure`），未收录不展示。
 
 ## 8. 关键算法（关键实现点）
@@ -90,8 +92,8 @@ type Row = Block[]; type Page = Row[];
 - 可访问性：播放器是 `role="img"` + `aria-label`，圆点与按钮带 `aria-label`，播放器可聚焦并有焦点样式；导入的文案与页脚页码都是真实文本。
 
 ## 10. 验收标准
-- **单元测试 31 项**（`tests/unit/`：layout 16、data-import 5、pinyin 5、strokes-data 5 个 `it`）全绿：去重保序、过滤标点、按笔画数排序稳定、`maxPerLine(20)=10`、`maxLines(20,2)=10`、`clampLayout` 边界、`buildBlock` 组合序列、块不超一行、分页不拆字、空内容一页、笔顺数据格式与抽查笔画数（火 4、必 5、方 4、里 7、女 3、绿 11、门 3、飞 3、马 3、鸟 5）、拼音多音字、模板 5 套。
-- **E2E 24 项**（`e2e/`：main-flow 16、print-and-perf 8 个 `test`）通过：主流程统计为 `5 字 · 1 页`、100 字 → `10 页` 且 100 个块无孤儿；「花」7 画出现 7 个步骤圆点、「木」4 画；「行」4 个读音选项且选择后刷新仍在。
+- **单元测试 44 项**（`tests/unit/`：layout 16、data-import 5、pinyin 5、strokes-data 5、backup 13 个 `it`）全绿：去重保序、过滤标点、按笔画数排序稳定、`maxPerLine(20)=10`、`maxLines(20,2)=10`、`clampLayout` 边界、`buildBlock` 组合序列、块不超一行、分页不拆字、空内容一页、笔顺数据格式与抽查笔画数（火 4、必 5、方 4、里 7、女 3、绿 11、门 3、飞 3、马 3、鸟 5）、拼音多音字、模板 5 套、备份文件头生成/坏文件坏条目逐条报错/覆盖·另存·跳过计数。
+- **E2E 30 项**（`e2e/`：main-flow 16、print-and-perf 8、backup-restore 6 个 `test`）通过：主流程统计为 `5 字 · 1 页`、100 字 → `10 页` 且 100 个块无孤儿；「花」7 画出现 7 个步骤圆点、「木」4 画；「行」4 个读音选项且选择后刷新仍在；导出文件含版本号/导出时间/份数、清数据后恢复、同 id 冲突三选一、版本不符与缺字段逐条点名且只恢复好的。
 - **打印一致性**：100mm 校验尺在屏幕宽度落在 375.9~379.9px（1mm = 3.7795px）；`page.pdf({ format: 'A4' })` 的 `/Type /Page` 计数与预览页数一致（100 字 → 10 页）。
 - **无笔顺数据**：`㐀` 显示「无笔顺数据」，块内描红路径数为 0；导入笔顺 JSON 后提示「已导入 1 条」且标注消失。
 - **性能**：100 字全量重排 < 200ms。
